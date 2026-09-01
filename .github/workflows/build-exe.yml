@@ -1,0 +1,116 @@
+name: Build Windows Installer
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-installer:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Build Tauri NSIS installer
+        run: npm run tauri build
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ''
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
+
+      - name: Find NSIS installer
+        id: find-installer
+        shell: pwsh
+        run: |
+          # Tauri outputs the NSIS installer into bundle/nsis/
+          $installer = Get-ChildItem -Path "src-tauri/target/release/bundle/nsis" `
+                        -Filter "*setup.exe" -ErrorAction SilentlyContinue |
+                        Select-Object -First 1
+
+          if (-not $installer) {
+            # Fallback: look for any setup exe in bundle folder
+            $installer = Get-ChildItem -Path "src-tauri/target/release/bundle" `
+                          -Filter "*setup.exe" -Recurse -ErrorAction SilentlyContinue |
+                          Select-Object -First 1
+          }
+
+          if (-not $installer) {
+            Write-Error "NSIS installer not found in bundle directory!"
+            exit 1
+          }
+
+          Write-Host "Found installer: $($installer.FullName)"
+          echo "INSTALLER_PATH=$($installer.FullName)" >> $env:GITHUB_OUTPUT
+          echo "INSTALLER_NAME=ToDoWidget-Setup.exe" >> $env:GITHUB_OUTPUT
+
+      - name: Rename installer to ToDoWidget-Setup.exe
+        shell: pwsh
+        run: |
+          Copy-Item "${{ steps.find-installer.outputs.INSTALLER_PATH }}" `
+                    "output/ToDoWidget-Setup.exe" -Force
+          New-Item -ItemType Directory -Path "output" -Force | Out-Null
+          Copy-Item "${{ steps.find-installer.outputs.INSTALLER_PATH }}" `
+                    "output/ToDoWidget-Setup.exe" -Force
+
+      - name: Upload installer as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ToDoWidget-Installer
+          path: output/ToDoWidget-Setup.exe
+          retention-days: 30
+
+      - name: Create GitHub Release with installer (on version tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: output/ToDoWidget-Setup.exe
+          name: "ToDoWidget ${{ github.ref_name }}"
+          body: |
+            ## ToDoWidget ${{ github.ref_name }}
+
+            ### 📥 Installation (single file, no admin required)
+            1. Download **`ToDoWidget-Setup.exe`** below
+            2. Double-click to install — no administrator rights needed
+            3. A **desktop shortcut** and **Start Menu entry** are created automatically
+            4. The app starts silently in your **system tray**
+            5. Press **Ctrl+Shift+Space** anywhere to open the widget
+
+            ### 🗑️ Uninstall
+            Go to **Settings → Apps → ToDoWidget** and click Uninstall.
+
+            ### ✨ Features
+            - Floating task widget (bottom-right, slides in/out)
+            - Global hotkey: `Ctrl+Shift+Space` (customizable)
+            - Priority levels with color-coded borders
+            - Progress bars & deadline badges
+            - Native Windows notifications for deadlines
+            - Linked folder shortcuts (open in Explorer)
+            - SQLite storage — data persists across reboots
+            - Optional launch on Windows startup
+          draft: false
+          prerelease: false

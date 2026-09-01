@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>To-Do Widget</title>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            widget: {
+              bg:      '#0d0d1a',
+              card:    '#141428',
+              border:  'rgba(255,255,255,0.08)',
+              text:    '#e2e8f0',
+              muted:   '#64748b',
+              accent:  '#7c3aed',
+              accent2: '#4f46e5',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <link rel="stylesheet" href="/src/styles.css" />
+</head>
+<body class="bg-transparent overflow-hidden">
+
+  <!-- ─── Main Widget Container ─────────────────────────────────────── -->
+  <div id="app" class="widget-root">
+
+    <!-- Header (drag region) -->
+    <div id="header" class="widget-header" data-tauri-drag-region>
+      <div class="header-left" data-tauri-drag-region>
+        <div class="header-dot"></div>
+        <h1 class="header-title" data-tauri-drag-region>My Tasks</h1>
+      </div>
+      <div class="header-actions">
+        <!-- Filter toggle -->
+        <button id="btn-filter" class="icon-action-btn" title="Filter &amp; Sort">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+            <path fill-rule="evenodd" d="M3 5a1 1 0 000 2h14a1 1 0 100-2H3zm2 4a1 1 0 000 2h10a1 1 0 100-2H5zm2 4a1 1 0 000 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+        <!-- Add task -->
+        <button id="btn-add" class="add-btn" title="Add Task">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+            <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z"/>
+          </svg>
+          Add
+        </button>
+        <!-- Settings -->
+        <button id="btn-settings" class="icon-action-btn" title="Settings">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+            <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter / Sort bar (collapsed by default) -->
+    <div id="filter-bar" class="filter-bar hidden">
+      <div class="filter-row">
+        <label class="filter-label">Show</label>
+        <select id="sel-filter" class="filter-select">
+          <option value="all">All Tasks</option>
+          <option value="active">Active</option>
+          <option value="completed">Completed</option>
+          <option value="high">High Priority</option>
+          <option value="medium">Medium Priority</option>
+          <option value="low">Low Priority</option>
+        </select>
+      </div>
+      <div class="filter-row">
+        <label class="filter-label">Sort by</label>
+        <select id="sel-sort" class="filter-select">
+          <option value="created_at">Date Added</option>
+          <option value="deadline">Deadline</option>
+          <option value="priority">Priority</option>
+          <option value="progress">Progress</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Task count summary -->
+    <div id="task-summary" class="task-summary"></div>
+
+    <!-- Task List -->
+    <div id="task-list" class="task-list"></div>
+
+  </div><!-- /#app -->
+
+  <!-- ─── Add / Edit Task Modal ─────────────────────────────────────── -->
+  <div id="modal-overlay" class="modal-overlay hidden">
+    <div id="modal" class="modal">
+      <div class="modal-header">
+        <h2 id="modal-title" class="modal-heading">Add Task</h2>
+        <button id="modal-close" class="modal-close-btn">✕</button>
+      </div>
+
+      <form id="task-form" autocomplete="off">
+        <!-- Title -->
+        <div class="form-group">
+          <label class="form-label">Title <span class="text-red-400">*</span></label>
+          <input id="f-title" type="text" class="form-input" placeholder="Task title..." required maxlength="100" />
+        </div>
+
+        <!-- Description -->
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea id="f-desc" class="form-input form-textarea" placeholder="Optional details..." maxlength="500" rows="2"></textarea>
+        </div>
+
+        <!-- Priority & Progress row -->
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label class="form-label">Priority</label>
+            <select id="f-priority" class="form-input">
+              <option value="Low">🔵 Low</option>
+              <option value="Medium" selected>🟡 Medium</option>
+              <option value="High">🔴 High</option>
+            </select>
+          </div>
+          <div class="form-group flex-1">
+            <label class="form-label">Progress: <span id="progress-val">0</span>%</label>
+            <input id="f-progress" type="range" min="0" max="100" value="0" class="form-range" />
+          </div>
+        </div>
+
+        <!-- Deadline -->
+        <div class="form-group">
+          <label class="form-label">Deadline</label>
+          <input id="f-deadline" type="datetime-local" class="form-input" />
+        </div>
+
+        <!-- Linked Paths -->
+        <div class="form-group">
+          <div class="flex items-center justify-between mb-1">
+            <label class="form-label mb-0">Linked Folders</label>
+            <button type="button" id="btn-pick-folder" class="pick-folder-btn">+ Browse</button>
+          </div>
+          <div id="linked-paths-list" class="linked-paths-list"></div>
+        </div>
+
+        <!-- Actions -->
+        <div class="form-actions">
+          <button type="button" id="btn-cancel-modal" class="btn-secondary">Cancel</button>
+          <button type="submit" id="btn-save-task" class="btn-primary">Save Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ─── Settings Modal ────────────────────────────────────────────── -->
+  <div id="settings-overlay" class="modal-overlay hidden">
+    <div id="settings-modal" class="modal">
+      <div class="modal-header">
+        <h2 class="modal-heading">⚙️ Settings</h2>
+        <button id="settings-close" class="modal-close-btn">✕</button>
+      </div>
+
+      <div class="settings-body">
+        <!-- Global Hotkey -->
+        <div class="settings-section">
+          <h3 class="settings-section-title">Global Hotkey</h3>
+          <p class="settings-section-desc">Shortcut to show/hide the widget from anywhere.</p>
+
+          <div class="hotkey-row">
+            <label class="hotkey-check">
+              <input type="checkbox" id="hk-ctrl" checked class="hotkey-checkbox" /> Ctrl
+            </label>
+            <label class="hotkey-check">
+              <input type="checkbox" id="hk-shift" checked class="hotkey-checkbox" /> Shift
+            </label>
+            <label class="hotkey-check">
+              <input type="checkbox" id="hk-alt" class="hotkey-checkbox" /> Alt
+            </label>
+            <span class="hotkey-plus">+</span>
+            <select id="hk-key" class="form-input hotkey-key-select">
+              <option value="Space" selected>Space</option>
+              <option value="A">A</option><option value="B">B</option>
+              <option value="C">C</option><option value="D">D</option>
+              <option value="E">E</option><option value="F">F</option>
+              <option value="G">G</option><option value="H">H</option>
+              <option value="I">I</option><option value="J">J</option>
+              <option value="K">K</option><option value="L">L</option>
+              <option value="M">M</option><option value="N">N</option>
+              <option value="O">O</option><option value="P">P</option>
+              <option value="Q">Q</option><option value="R">R</option>
+              <option value="S">S</option><option value="T">T</option>
+              <option value="U">U</option><option value="V">V</option>
+              <option value="W">W</option><option value="X">X</option>
+              <option value="Y">Y</option><option value="Z">Z</option>
+              <option value="F1">F1</option><option value="F2">F2</option>
+              <option value="F3">F3</option><option value="F4">F4</option>
+              <option value="F5">F5</option><option value="F6">F6</option>
+              <option value="F7">F7</option><option value="F8">F8</option>
+              <option value="F9">F9</option><option value="F10">F10</option>
+              <option value="F11">F11</option><option value="F12">F12</option>
+            </select>
+          </div>
+
+          <button id="btn-apply-shortcut" class="btn-primary mt-3 w-full">Apply Shortcut</button>
+          <p id="shortcut-feedback" class="settings-feedback hidden"></p>
+        </div>
+
+        <!-- Auto-start -->
+        <div class="settings-section">
+          <h3 class="settings-section-title">Launch on Startup</h3>
+          <p class="settings-section-desc">Start To-Do Widget automatically when Windows boots.</p>
+          <label class="toggle-label">
+            <input type="checkbox" id="toggle-autostart" class="toggle-checkbox" />
+            <span class="toggle-track">
+              <span class="toggle-thumb"></span>
+            </span>
+            <span id="autostart-label" class="toggle-text">Disabled</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

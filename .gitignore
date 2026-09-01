@@ -1,0 +1,23 @@
+# Build artifacts
+/target/
+/dist/
+/output/
+
+# Node
+node_modules/
+
+# Tauri
+/src-tauri/target/
+/src-tauri/gen/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Env
+.env
+.env.local
