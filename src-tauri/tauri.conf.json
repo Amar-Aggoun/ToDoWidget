@@ -37,14 +37,10 @@
     ],
     "windows": {
       "nsis": {
-        "displayLanguageSelector": false,
         "installMode": "currentUser",
-        "shortcutName": "ToDoWidget",
-        "createDesktopShortcut": true,
-        "createStartMenuShortcut": true,
-        "installerIcon": "icons/icon.ico",
-        "headerImage": "icons/128x128.png",
-        "sidebarImage": "icons/128x128@2x.png"
+        "displayLanguageSelector": false,
+        "shortcutsEnabled": true,
+        "installerIcon": "icons/icon.ico"
       }
     }
   }
