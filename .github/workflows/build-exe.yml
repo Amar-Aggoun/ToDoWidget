@@ -21,8 +21,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: '24'
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -35,7 +34,7 @@ jobs:
           workspaces: './src-tauri -> target'
 
       - name: Install Node dependencies
-        run: npm ci
+        run: npm install
 
       - name: Build Tauri NSIS installer
         run: npm run tauri build
