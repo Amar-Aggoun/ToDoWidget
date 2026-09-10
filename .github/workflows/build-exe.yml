@@ -36,6 +36,9 @@ jobs:
       - name: Install Node dependencies
         run: npm install
 
+      - name: Generate app icons from icon.png
+        run: npm run tauri icon icon.png
+
       - name: Build Tauri NSIS installer
         run: npm run tauri build
         env:
@@ -65,16 +68,14 @@ jobs:
 
           Write-Host "Found installer: $($installer.FullName)"
           echo "INSTALLER_PATH=$($installer.FullName)" >> $env:GITHUB_OUTPUT
-          echo "INSTALLER_NAME=ToDoWidget-Setup.exe" >> $env:GITHUB_OUTPUT
 
-      - name: Rename installer to ToDoWidget-Setup.exe
+      - name: Copy installer to output folder
         shell: pwsh
         run: |
-          Copy-Item "${{ steps.find-installer.outputs.INSTALLER_PATH }}" `
-                    "output/ToDoWidget-Setup.exe" -Force
           New-Item -ItemType Directory -Path "output" -Force | Out-Null
           Copy-Item "${{ steps.find-installer.outputs.INSTALLER_PATH }}" `
                     "output/ToDoWidget-Setup.exe" -Force
+
 
       - name: Upload installer as artifact
         uses: actions/upload-artifact@v4

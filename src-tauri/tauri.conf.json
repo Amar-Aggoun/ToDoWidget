@@ -37,10 +37,7 @@
     ],
     "windows": {
       "nsis": {
-        "installMode": "currentUser",
-        "displayLanguageSelector": false,
-        "shortcutsEnabled": true,
-        "installerIcon": "icons/icon.ico"
+        "installMode": "currentUser"
       }
     }
   }
