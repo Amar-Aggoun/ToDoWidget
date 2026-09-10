@@ -36,9 +36,6 @@ jobs:
       - name: Install Node dependencies
         run: npm install
 
-      - name: Generate app icons from icon.png
-        run: npm run tauri icon icon.png
-
       - name: Build Tauri NSIS installer
         run: npm run tauri build
         env:
